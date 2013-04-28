@@ -1,4 +1,4 @@
--- slabrealm 0.2.0 by paramat.
+-- slabrealm 0.2.1 by paramat.
 -- License WTFPL, see license.txt.
 -- Textures license CC BY-SA.
 -- The snow and ice textures are from the snow biomes mod by Splizard, bob and cornernote, license CC BY-SA.
@@ -49,8 +49,9 @@ local CLOTHR = 0.6 -- 0.6 -- Cloud threshold (-2.0 to 2.0). Cloud cover, -2.0 = 
 local CLOINT = 37 --  -- Cloud drift abm interval in seconds.
 local CLOCHA = 4096 -- 4096 = 64^2*4/4 -- Cloud drift abm 1/x chance per slith node.
 
+local SNOABM = true -- Enable snowing abm.
 local SNOINT = 31 --  -- Snowing abm interval in seconds.
-local SNOCHA = 4096 -- 4096 = 64^2*32/32 -- Snowing abm 1/x chance per air node.
+local SNOCHA = 1024 -- 1024 = 64^2*4/16 -- Snowing abm 1/x chance per slith node.
 
 local DEBUG = true
 
@@ -398,10 +399,10 @@ if SLABREALM then
 						local y = y0 + j
 						local noise1 = perlin1:get3d({x=x,y=y-0.25,z=z}) -- noise at centre of lower slab
 						local offset1 = (OFFCEN - (y - 0.25)) / GRAD
-						if noise1 + offset1 >= AIRTHR or y <= yminq + 18 then
+						if noise1 + offset1 >= AIRTHR or y <= yminq + 19 then
 							break -- if below slith base break y loop new column
 						elseif (noise1 + offset1 >= SLITHR and noise1 + offset1 < AIRTHR) -- if slith base
-						or y <= yminq + 23 then
+						or y <= yminq + 24 then
 							env:add_node({x=x,y=y,z=z},{name="slabrealm:slith"})
 						elseif noise1 + offset1 >= 0 and noise1 + offset1 < SLITHR then -- if terrain
 							local noise5 = perlin3:get3d({x=x,y=y-0.25,z=z})
@@ -480,7 +481,7 @@ if SLABREALM then
 								end
 								surf = true
 							end
-						elseif y <= yminq + 28 then
+						elseif y <= yminq + 29 then
 							env:add_node({x=x,y=y,z=z},{name="default:sand"})
 						elseif y <= WATY then
 							if sno and y == WATY then
@@ -498,7 +499,7 @@ if SLABREALM then
 				end
 				for i = 0, xl, 16 do
 				for k = 0, zl, 16 do
-					local noise4 = perlin2:get2d({x=(x0+i)*4,y=(z0+k)*32})
+					local noise4 = perlin2:get2d({x=(x0+i)*4,y=(z0+k)*16})
 					if noise4 > CLOTHR then
 						for a = 0, 15 do
 						for b = 0, 15 do
@@ -517,7 +518,7 @@ if SLABREALM then
 	end)
 end
 
--- ABM
+-- Dirtslab to grassslab abm.
 
 minetest.register_abm({
 	nodenames = {"slabrealm:dirtslab"},
@@ -527,6 +528,8 @@ minetest.register_abm({
 		minetest.env:add_node(pos,{name="slabrealm:grassslab"})
 	end,
 })
+
+-- Cloud drift abm.
 
 minetest.register_abm({
 	nodenames = {
@@ -596,39 +599,49 @@ minetest.register_abm({
 	end
 })
 
-minetest.register_abm({
-	nodenames = {
-		"air",
-	},
-	interval = SNOINT,
-	chance = SNOCHA,
-	action = function(pos, node, _, _)
-		local env = minetest.env
-		local perlin2 = env:get_perlin(SEEDDIFF2, OCTAVES2, PERSISTENCE2, SCALE2)
-		local noise3 = perlin2:get2d({x=pos.x,y=pos.z})
-		if noise3 < SNOTET then
-			local surfy = false
-			for j = 0, 79 do
-				local y = pos.y - j
-				nodename = env:get_node({x=pos.x,y=y,z=pos.z}).name
-				if nodename == "ignore"
-				or nodename == "slabrealm:snowslab"
-				or nodename == "slabrealm:snowblock" then
-					return
-				elseif nodename ~= "air" and nodename ~= "ignore" and nodename ~= "slabrealm:cloud" then
-					surfy = y
-					break
+-- Snowing abm.
+
+if SNOABM then
+	minetest.register_abm({
+		nodenames = {
+			"slabrealm:slith",
+		},
+		interval = SNOINT,
+		chance = SNOCHA,
+		action = function(pos, node, _, _)
+			local env = minetest.env
+			local perlin2 = env:get_perlin(SEEDDIFF2, OCTAVES2, PERSISTENCE2, SCALE2)
+			local perlin4 = env:get_perlin(SEEDDIFF4, OCTAVES4, PERSISTENCE4, SCALE4)
+			local noise3 = perlin2:get2d({x=pos.x,y=pos.z})
+			local noise9 = perlin4:get2d({x=pos.x,y=pos.z})
+			if noise3 < SNOTET and noise9 > JUNWET then -- if wet snow biome
+				local surfy = false
+				for j = 79, 0, -1 do
+					local y = pos.y + j
+					anodename = nodename
+					nodename = env:get_node({x=pos.x,y=y,z=pos.z}).name
+					if nodename == "default:water_source"
+					or nodename == "default:water_flowing" then
+						return
+					elseif nodename ~= "air" and nodename ~= "ignore" -- if ground with air above
+					and nodename ~= "slabrealm:cloud" and anodename == "air" then
+						surfy = y
+						break
+					end
 				end
-			end
-			if surfy and surfy < SAVY - SAMP then
-				if nodename == "slabrealm:grassslab"
-				or nodename == "slabrealm:dirtslab"
-				or nodename == "slabrealm:sandslab" then
-					env:add_node({x=pos.x,y=surfy,z=pos.z},{name="slabrealm:snowblock"})
-				else
-					env:add_node({x=pos.x,y=surfy+1,z=pos.z},{name="slabrealm:snowslab"})
+				if surfy and surfy < SAVY - SAMP then -- if below minimum snowline.
+					if DEBUG then
+						print ("[slabrealm] Snow falls")
+					end
+					if nodename == "slabrealm:grassslab"
+					or nodename == "slabrealm:dirtslab"
+					or nodename == "slabrealm:sandslab" then
+						env:add_node({x=pos.x,y=surfy,z=pos.z},{name="slabrealm:snowblock"})
+					else
+						env:add_node({x=pos.x,y=surfy+1,z=pos.z},{name="slabrealm:snowslab"})
+					end
 				end
 			end
 		end
-	end
-})
+	})
+end

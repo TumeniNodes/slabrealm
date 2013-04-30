@@ -1,7 +1,8 @@
--- slabrealm 0.2.1 by paramat.
+-- slabrealm 0.3.0 by paramat.
 -- License WTFPL, see license.txt.
 -- Textures license CC BY-SA.
--- The snow and ice textures are from the snow biomes mod by Splizard, bob and cornernote, license CC BY-SA.
+-- The snow, ice, needles and psapling textures are from the snow biomes mod by Splizard, bob and cornernote, license CC BY-SA.
+-- The jleaf and jsapling sapling textures are from the jungletree mod by Bas080, license WTFPL.
 
 -- Parameters.
 
@@ -11,19 +12,17 @@ local YMAX = 4700 --  -- Approx realm top, will be rounded up to chunk edge.
 local OFFCEN = 4008 --  -- Offset centre. Average y of terrain.
 local GRAD = 340 --  -- Noise gradient. Controls maximum height and steepness of terrain.
 local WATY = 4008 --  -- Water surface y.
-local CAVOFF = 0.6 -- 0.6 -- Caves offset. Controls cave size and density of cave entrances at the surface.
 
-local AIRTHR = 0.065 -- 0.065 -- Air noise threshold. Controls total depth of terrain and slith base.
-local SLITHR = 0.05 -- 0.05 -- Slith noise threshold. Controls terrain depth.
+local CAVOFF = -0.01 -- -0.01 -- Cave offset. Controls cave size and size of cave entrances at the surface.
+local CAVEXP = 2 -- 2 -- Average cave expansion below surface, expansion is varied by perlin2 (noise10).
+local AIRTHR = 0.07 -- 0.07 -- Air noise threshold. Controls total depth of terrain and slith base.
+local SLITHR = 0.055 -- 0.055 -- Slith noise threshold. Controls terrain depth.
 local STOTHR = 0.015 -- 0.015 -- Stone noise threshold. Controls depth of dirt / sand below rockline.
 
-local DESTET = 0.25 --  -- Desert temperature noise threshold. Desert above this.
-local DESWET = 0.35 --  -- Desert wetness noise threshold. Desert below this.
-
-local SNOTET = -0.55 --  -- Snow/ice temperature noise threshold. Snow/ice biome and snowing abm below this.
-
-local JUNTET = 0.25 --  -- Jungle temperature noise threshold. Jungle above this.
-local JUNWET = 0.35 --  -- Jungle wetness noise threshold. Jungle above this.
+local HITET = 0.35 --  -- Desert / rainforest temperature noise threshold.
+local LOTET = -0.45 --  -- Tundra / taiga temperature noise threshold.
+local HIWET = 0.25 --  -- Wet grassland / rainforest wetness noise threshold.
+local LOWET = -0.35 --  -- Tundra / dry grassland wetness noise threshold.
 
 local SAVY = 4520 --  -- Snowline average y.
 local SAMP = 64 --  -- Snowline amplitude.
@@ -37,43 +36,57 @@ local SANY = 4012 --  -- Sandline average y.
 local SANA = 4 --  -- Sandline amplitude.
 local SAND = 2 --  -- Sandline transition distance.
 
-local JUNGRA = 2 --  -- Junglegrass rarity, 1/x chance per non-slab node.
-local PAPRA = 2 --  -- Papyrus rarity, 1/x chance per waterlevel node.
-local PAPTET = 0 --  -- Papyrus temperature noise threshold.
-local APPRA = 25 --  -- Appletree sapling rarity.
-local CACRA = 361 --  -- Cactus rarity.
-local DRYRA = 121 --  -- Dry shrub rarity.
+local PAPCHA = 2 --  -- Papyrus 1/x chance per waterlevel node.
+local PAPTET = 0.35 --  -- Papyrus temperature noise threshold.
+local DESCACCHA = 421 --  -- Cactus 1/x chance per full node in desert.
+local DESGRACHA = 265 --  -- Dry shrub 1/x chance per full node in desert.
+local TUNGRACHA = 145 --  -- Dry shrub 1/x chance per full node in tundra.
+local TAIGRACHA = 60 --  -- Dry shrub 1/x chance per full node in taiga.
+local DRYGRACHA = 3 --  -- Dry shrub 1/x chance per full node in dry grasslands.
+local WETGRACHA = 2 --  -- Junglegrass 1/x chance per full node in wet grasslands.
+local DECAPPCHA = 85 --  -- Appletree sapling 1/x chance per full node in deciduous forest.
+local TAIPINCHA = 25 --  -- Pine 1/x chance per full node in taiga.
+local RAIJUNCHA = 13 --  -- Jungletree 1/x chance per full node in rainforest.
 
-local CLOUDY = 4136 --  -- Cloud y.
+local CLOUDY = 4136 -- Cloud y.
 local CLOTHR = 0.6 -- 0.6 -- Cloud threshold (-2.0 to 2.0). Cloud cover, -2.0 = overcast, 0 = 1/2 cover, 0.4 = 1/3, 2.0 = none.
-local CLOINT = 37 --  -- Cloud drift abm interval in seconds.
+local CLOINT = 59 -- 59 -- Cloud drift abm interval in seconds.
 local CLOCHA = 4096 -- 4096 = 64^2*4/4 -- Cloud drift abm 1/x chance per slith node.
 
 local SNOABM = true -- Enable snowing abm.
-local SNOINT = 31 --  -- Snowing abm interval in seconds.
-local SNOCHA = 1024 -- 1024 = 64^2*4/16 -- Snowing abm 1/x chance per slith node.
+local SNOINT = 57 -- 57 -- Snowing abm interval in seconds.
+local SNOCHA = 4096 -- 4096 = 64^2*4/4 -- 1/x chance per slith node.
+
+local GRAINT = 61 -- 61 -- Dirtslab to grassslab abm interval in seconds.
+local GRACHA = 11 -- 11 -- 1/x chance per dirtslab.
+
+local PININT = 67 -- 67 -- Pine from sapling abm interval in seconds.
+local PINCHA = 11 -- 11 -- 1/x chance per node.
+
+local JUNINT = 71 -- 71 -- Jungletree from sapling abm interval in seconds.
+local JUNCHA = 11 -- 11 -- 1/x chance per node.
 
 local DEBUG = true
 
--- 3D Perlin noise for terrain (noise1 and noise2).
+-- 3D Perlin1 for terrain (noise1 and noise2).
 local SEEDDIFF1 = 5829058
 local OCTAVES1 = 8 -- 8
-local PERSISTENCE1 = 0.53 --  -- Roughness of terrain.
+local PERSISTENCE1 = 0.53 -- 0.53 -- Roughness of terrain.
 local SCALE1 = 1024 -- 1024 -- Largest scale of terrain.
 
--- 2D Perlin noise for temperature (noise3), clouds (noise4), rockline (noise7).
+-- 2D Perlin2 for temperature (noise3), clouds (noise4), rockline (noise7), cave size (noise10).
 local SEEDDIFF2 = 7690676
 local OCTAVES2 = 5 -- 5
 local PERSISTENCE2 = 0.5 -- 0.5
 local SCALE2 = 512 -- 512
 
--- 3D Perlin noise for caves (noise5).
+-- 3D Perlin3 for caves (noise5).
 local SEEDDIFF3 = 8486984
 local OCTAVES3 = 2 -- 2
 local PERSISTENCE3 = 0.53 -- 0.53
-local SCALE3 = 8 -- 8
+local SCALE3 = 16 -- 16
 
--- 2D Perlin noise for wetness (noise9), sandline (noise6), snowline (noise8).
+-- 2D Perlin4 for wetness (noise9), sandline (noise6), snowline (noise8).
 local SEEDDIFF4 = 1035756
 local OCTAVES4 = 5 -- 5
 local PERSISTENCE4 = 0.5 -- 0.5
@@ -292,6 +305,64 @@ minetest.register_node("slabrealm:ice", {
 	sounds = default.node_sound_stone_defaults(),
 })
 
+minetest.register_node("slabrealm:needles", {
+	description = "SR Pine Needles",
+	visual_scale = 1.3,
+	tiles = {"slabrealm_needles.png"},
+	paramtype = "light",
+	groups = {snappy=3, flammable=2},
+	drop = {
+		max_items = 1,
+		items = {
+			{items = {"slabrealm:psapling"}, rarity = 20},
+			{items = {"slabrealm:needles"}}
+		}
+	},
+	sounds = default.node_sound_leaves_defaults(),
+})
+
+minetest.register_node("slabrealm:psapling", {
+	description = "SR Pine Sapling",
+	drawtype = "plantlike",
+	visual_scale = 1.0,
+	tiles = {"slabrealm_psapling.png"},
+	inventory_image = "slabrealm_psapling.png",
+	wield_image = "slabrealm_psapling.png",
+	paramtype = "light",
+	walkable = false,
+	groups = {snappy=2,dig_immediate=3,flammable=2},
+	sounds = default.node_sound_defaults(),
+})
+
+minetest.register_node("slabrealm:jleaf", {
+	description = "SR Jungle Leaves",
+	visual_scale = 1.3,
+	tiles = {"slabrealm_jleaf.png"},
+	paramtype = "light",
+	groups = {snappy=3, flammable=2},
+	drop = {
+		max_items = 1,
+		items = {
+			{items = {"slabrealm:jsapling"}, rarity = 20},
+			{items = {"slabrealm:jleaf"}}
+		}
+	},
+	sounds = default.node_sound_leaves_defaults(),
+})
+
+minetest.register_node("slabrealm:jsapling", {
+	description = "SR Jungletree Sapling",
+	drawtype = "plantlike",
+	visual_scale = 1.0,
+	tiles = {"slabrealm_jsapling.png"},
+	inventory_image = "slabrealm_jsapling.png",
+	wield_image = "slabrealm_jsapling.png",
+	paramtype = "light",
+	walkable = false,
+	groups = {snappy=2,dig_immediate=3,flammable=2},
+	sounds = default.node_sound_defaults(),
+})
+
 -- Crafting
 
 minetest.register_craft({
@@ -377,21 +448,40 @@ if SLABREALM then
 				end
 				for i = 0, xl do -- for each column do
 					local x = x0 + i
-					local surf = false
-					local uland = false
-					local des = false
-					local jun = false
-					local tre = false
-					local sno = false
+					local surf = false -- has surface been found?
+					local uland = false -- is column inland not under sand?
+					local des = false -- desert biome
+					local rai = false -- rainforest biome
+					local wet = false -- wet grassland biome
+					local dry = false -- dry grassland biome
+					local dec = false -- deciduous forest biome
+					local tun = false -- tundra biome
+					local tai = false -- taiga forest biome
 					local noise3 = perlin2:get2d({x=x,y=z})
 					local noise9 = perlin4:get2d({x=x,y=z})
-					local noise6 = perlin4:get2d({x=x*2,y=z*2})
-					local noise7 = perlin2:get2d({x=x+620,y=z})
-					local noise8 = perlin4:get2d({x=x+620,y=z})
-					if noise3 > DESTET + math.random() / 10 and noise9 < DESWET + math.random() / 10 then des = true end
-					if noise3 > JUNTET + math.random() / 10 and noise9 > JUNWET + math.random() / 10 then jun = true end
-					if noise3 < DESTET + math.random() / 10 and noise9 > JUNWET + math.random() / 10 then tre = true end
-					if noise3 < SNOTET + math.random() / 10 then sno = true end
+					local noise6 = perlin4:get2d({x=x*4,y=z*4})
+					local noise7 = perlin2:get2d({x=x*2,y=z*2})
+					local noise8 = perlin4:get2d({x=x+1024,y=z+1024})
+					local noise10 = perlin2:get2d({x=x*4,y=z*4})
+					if noise3 > HITET + math.random() / 10 then
+						if noise9 > HIWET + math.random() / 10 then
+							rai = true
+						else
+							des = true
+						end
+					elseif noise3 < LOTET + math.random() / 10 then
+						if noise9 < LOWET + math.random() / 10 then
+							tun = true
+						else
+							tai = true
+						end
+					elseif noise9 > HIWET + math.random() / 10 then
+						wet = true
+					elseif noise9 < LOWET + math.random() / 10 then
+						dry = true
+					else
+						dec = true
+					end
 					local sandy = SANY + noise6 * SANA + math.random(SAND)
 					local rocky = RAVY + noise7 * RAMP
 					local snowy = SAVY + noise8 * SAMP + math.random (SDIS)
@@ -399,14 +489,14 @@ if SLABREALM then
 						local y = y0 + j
 						local noise1 = perlin1:get3d({x=x,y=y-0.25,z=z}) -- noise at centre of lower slab
 						local offset1 = (OFFCEN - (y - 0.25)) / GRAD
-						if noise1 + offset1 >= AIRTHR or y <= yminq + 19 then
+						if noise1 + offset1 >= AIRTHR or y <= yminq + 18 then
 							break -- if below slith base break y loop new column
 						elseif (noise1 + offset1 >= SLITHR and noise1 + offset1 < AIRTHR) -- if slith base
-						or y <= yminq + 24 then
+						or y <= yminq + 23 then
 							env:add_node({x=x,y=y,z=z},{name="slabrealm:slith"})
 						elseif noise1 + offset1 >= 0 and noise1 + offset1 < SLITHR then -- if terrain
 							local noise5 = perlin3:get3d({x=x,y=y-0.25,z=z})
-							if noise5 - noise1 - offset1 + CAVOFF > 0 then -- if no cave
+							if math.abs(noise5) - (noise1 + offset1) * (CAVEXP + noise10 / 2) + CAVOFF > 0 then -- if no cave
 								if y > rocky then
 									thrsto = STOTHR * (1 - (y - rocky) / RDIS)
 								else
@@ -418,41 +508,61 @@ if SLABREALM then
 									else
 										env:add_node({x=x,y=y,z=z},{name="slabrealm:stone"})
 									end
-									if sno and not surf and y < snowy then
-										env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
+									if (tun or tai) and not surf and y < snowy then
+										if tai then
+											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowblock"})
+										else
+											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
+										end
 									end
 								elseif not surf and y > WATY then -- if at surface and above water
 									if y > sandy then uland = true end
 									local noise2 = perlin1:get3d({x=x,y=y+0.25,z=z})
 									local offset2 = (OFFCEN - (y+0.25)) / GRAD
 									if noise2 + offset2 > 0 then -- if centre of upper slab is solid
-										if sno then
+										if tai then
+											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowblock"})
+										elseif tun then
 											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
 										end
 										if y <= sandy then -- if beach
 											env:add_node({x=x,y=y,z=z},{name="default:sand"})
 										elseif des then -- if desert
 											env:add_node({x=x,y=y,z=z},{name="default:desert_sand"})
-											if math.random(DRYRA) == 2 then
+											if math.random(DESGRACHA) == 2 then
 												env:add_node({x=x,y=y+1,z=z},{name="default:dry_shrub"})
-											elseif math.random(CACRA) == 2 then
-												for c = 1, math.random(1,7) do
+											elseif math.random(DESCACCHA) == 2 then
+												for c = 1, math.random(1,6) do
 													env:add_node({x=x,y=y+c,z=z},{name="default:cactus"})
 												end
 											end
-										else
+										elseif tun then -- if tundra
+											env:add_node({x=x,y=y,z=z},{name="default:dirt"})
+											if math.random(TUNGRACHA) == 2 then
+												env:add_node({x=x,y=y+1,z=z},{name="default:dry_shrub"})
+											end
+										else -- dry / wet grasslands, taige, deciduous forest, rainforest
 											env:add_node({x=x,y=y,z=z},{name="default:dirt_with_grass"})
-											if jun and math.random(JUNGRA) == 2 then
+											if dry and math.random(DRYGRACHA) == 2 then
+												env:add_node({x=x,y=y+1,z=z},{name="default:dry_shrub"})
+											elseif wet and math.random(WETGRACHA) == 2 then
 												env:add_node({x=x,y=y+1,z=z},{name="default:junglegrass"})
-											--elseif jun and math.random(JUNTRA) == 2 then
-												--env:add_node({x=x,y=y+1,z=z},{name="default:jungletree_sapling"})
-											elseif tre and y > sandy and math.random(APPRA) == 2 then
+											elseif tai and math.random(TAIGRACHA) == 2 then
+												env:add_node({x=x,y=y+1,z=z},{name="default:dry_shrub"})
+											elseif dec and y > sandy and math.random(DECAPPCHA) == 2 then
 												env:add_node({x=x,y=y+1,z=z},{name="default:sapling"})
+											elseif tai and math.random(TAIPINCHA) == 2 then
+												slabrealm_pine({x=x,y=y+1,z=z})
+											elseif rai and math.random(RAIJUNCHA) == 2 then
+												slabrealm_jtree({x=x,y=y+1,z=z})
 											end
 										end
 									else
-										if sno then
+										if (tun or tai) then
 											env:add_node({x=x,y=y,z=z},{name="slabrealm:snowblock"})
+											if tai then
+												env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
+											end
 										elseif y <= sandy then
 											env:add_node({x=x,y=y,z=z},{name="slabrealm:sandslab"})
 										elseif des then
@@ -462,30 +572,37 @@ if SLABREALM then
 										end
 									end
 								else
-									if not surf and y == WATY and noise3 > PAPTET
-									and math.random(PAPRA) == 2 then -- if at surface, water level, above temp threshold
-										env:add_node({x=x,y=y,z=z},{name="default:dirt_with_grass"}) -- marshy ground
-										for p = 1, math.random(2,5) do -- add papyrus
-											env:add_node({x=x,y=y+p,z=z},{name="default:papyrus"})
-										end
-									elseif y <= sandy and not uland then -- if below sandline and not underland
+									if y <= sandy and not uland then -- if below sandline and not underland
 										env:add_node({x=x,y=y,z=z},{name="default:sand"})
 									elseif des then
 										env:add_node({x=x,y=y,z=z},{name="default:desert_sand"})
 									else
 										env:add_node({x=x,y=y,z=z},{name="default:dirt"})
 									end
-									if not surf and y == WATY and sno then -- if at surface and at water level in snow biome
-										env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
+									if not surf and y == WATY then -- if at surface, water level
+										if tai then
+											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowblock"})
+										elseif tun then
+											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
+										end
+										if noise3 > PAPTET + math.random() / 10 and math.random(PAPCHA) == 1 then
+											env:add_node({x=x,y=y,z=z},{name="default:dirt_with_grass"}) -- marshy ground
+											for p = 1, math.random(2,5) do
+												env:add_node({x=x,y=y+p,z=z},{name="default:papyrus"})
+											end
+										end
 									end
 								end
 								surf = true
 							end
-						elseif y <= yminq + 29 then
+						elseif y <= yminq + 28 then
 							env:add_node({x=x,y=y,z=z},{name="default:sand"})
 						elseif y <= WATY then
-							if sno and y == WATY then
+							if (tun or tai) and y == WATY then
 								env:add_node({x=x,y=y,z=z},{name="slabrealm:ice"})
+								if tai then
+									env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
+								end
 							else
 								env:add_node({x=x,y=y,z=z},{name="default:water_source"})
 							end
@@ -518,18 +635,16 @@ if SLABREALM then
 	end)
 end
 
--- Dirtslab to grassslab abm.
+-- ABM
 
 minetest.register_abm({
 	nodenames = {"slabrealm:dirtslab"},
-	interval = 72,
-	chance = 7,
+	interval = GRAINT,
+	chance = GRACHA,
 	action = function(pos, node, active_object_count, active_object_count_wider)
 		minetest.env:add_node(pos,{name="slabrealm:grassslab"})
 	end,
 })
-
--- Cloud drift abm.
 
 minetest.register_abm({
 	nodenames = {
@@ -599,8 +714,6 @@ minetest.register_abm({
 	end
 })
 
--- Snowing abm.
-
 if SNOABM then
 	minetest.register_abm({
 		nodenames = {
@@ -614,7 +727,7 @@ if SNOABM then
 			local perlin4 = env:get_perlin(SEEDDIFF4, OCTAVES4, PERSISTENCE4, SCALE4)
 			local noise3 = perlin2:get2d({x=pos.x,y=pos.z})
 			local noise9 = perlin4:get2d({x=pos.x,y=pos.z})
-			if noise3 < SNOTET and noise9 > JUNWET then -- if wet snow biome
+			if noise3 < LOTET and noise9 > LOWET then -- if taiga biome
 				local surfy = false
 				for j = 79, 0, -1 do
 					local y = pos.y + j
@@ -623,13 +736,12 @@ if SNOABM then
 					if nodename == "default:water_source"
 					or nodename == "default:water_flowing" then
 						return
-					elseif nodename ~= "air" and nodename ~= "ignore" -- if ground with air above
-					and nodename ~= "slabrealm:cloud" and anodename == "air" then
+					elseif nodename ~= "air" and nodename ~= "ignore" and nodename ~= "slabrealm:cloud" and anodename == "air" then
 						surfy = y
 						break
 					end
 				end
-				if surfy and surfy < SAVY - SAMP then -- if below minimum snowline.
+				if surfy and surfy < SAVY - SAMP then
 					if DEBUG then
 						print ("[slabrealm] Snow falls")
 					end
@@ -644,4 +756,88 @@ if SNOABM then
 			end
 		end
 	})
+end
+
+-- Pine sapling abm.
+
+minetest.register_abm({
+    nodenames = {"slabrealm:psapling"},
+    interval = PININT,
+    chance = PINCHA,
+    action = function(pos, node, active_object_count, active_object_count_wider)
+		slabrealm_pine(pos)
+		if DEBUG then
+			print ("[slabrealm] Pine sapling grows")
+		end
+    end,
+})
+
+-- Jungletree sapling abm.
+
+minetest.register_abm({
+    nodenames = {"slabrealm:jsapling"},
+    interval = JUNINT,
+    chance = JUNCHA,
+    action = function(pos, node, active_object_count, active_object_count_wider)
+		slabrealm_jtree(pos)
+		if DEBUG then
+			print ("[slabrealm] Jungletree sapling grows")
+		end
+    end,
+})
+
+-- Pine tree function
+
+function slabrealm_pine(pos)
+	local env = minetest.env
+	local t = 5 + math.random(3)
+	for j= -2, t - 2 do
+		env:add_node({x=pos.x,y=pos.y+j,z=pos.z},{name="default:tree"})
+		if j >= 1 and j <= t - 4 then
+			for i = -1, 1 do
+			for k = -1, 1 do
+				if i ~= 0 or k ~= 0 then
+					env:add_node({x=pos.x+i,y=pos.y+j,z=pos.z+k},{name="slabrealm:needles"})
+				end
+				if j == t - 4 and i ~= 0 and k ~= 0 then
+					env:add_node({x=pos.x+i,y=pos.y+j+1,z=pos.z+k},{name="slabrealm:snowslab"})
+				end
+			end
+			end
+		elseif j >= t - 3 then
+			for i = -1, 1 do
+			for k = -1, 1 do
+				if (i == 0 and k ~= 0) or (i ~= 0 and k == 0) then
+					env:add_node({x=pos.x+i,y=pos.y+j,z=pos.z+k},{name="slabrealm:needles"})
+					if j == t - 2 then
+						env:add_node({x=pos.x+i,y=pos.y+j+1,z=pos.z+k},{name="slabrealm:snowslab"})
+					end
+				end
+			end
+			end
+		end
+	end
+	for j = t - 1, t do
+		env:add_node({x=pos.x,y=pos.y+j,z=pos.z},{name="slabrealm:needles"})
+	end
+	env:add_node({x=pos.x,y=pos.y+t+1,z=pos.z},{name="slabrealm:snowslab"})
+end
+
+-- Jungletree function
+
+function slabrealm_jtree(pos)
+	local env = minetest.env
+	local t = 12 + math.random(5)
+	for j = -3, t do
+		if j == math.floor(t * 0.8) or j == t then
+			for i = -2, 2 do
+			for k = -2, 2 do
+				if math.random(5) ~= 2 then
+					env:add_node({x=pos.x+i,y=pos.y+j,z=pos.z+k},{name="slabrealm:jleaf"})
+				end
+			end
+			end
+		end
+		env:add_node({x=pos.x,y=pos.y+j-1,z=pos.z},{name="default:jungletree"})
+	end
 end

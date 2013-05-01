@@ -4,7 +4,7 @@
 -- The snow, ice, needles and psapling textures are from the snow biomes mod by Splizard, bob and cornernote, license CC BY-SA.
 -- The jleaf and jsapling sapling textures are from the jungletree mod by Bas080, license WTFPL.
 
--- Parameters.
+-- Parameters
 
 local SLABREALM = true -- Enable generation (true / false).
 local YMIN = 4000 --  -- Approx realm bottom, will be rounded down to chunk edge.

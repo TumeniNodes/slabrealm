@@ -1,54 +1,55 @@
--- slabrealm 0.3.0 by paramat.
+-- slabrealm 0.4.0 by paramat.
 -- License WTFPL, see license.txt.
 -- Textures license CC BY-SA.
 -- The snow, ice, needles and psapling textures are from the snow biomes mod by Splizard, bob and cornernote, license CC BY-SA.
 -- The jleaf and jsapling sapling textures are from the jungletree mod by Bas080, license WTFPL.
 
--- Parameters
+-- Parameters.
 
 local SLABREALM = true -- Enable generation (true / false).
-local YMIN = 4000 --  -- Approx realm bottom, will be rounded down to chunk edge.
-local YMAX = 4700 --  -- Approx realm top, will be rounded up to chunk edge.
-local OFFCEN = 4008 --  -- Offset centre. Average y of terrain.
-local GRAD = 340 --  -- Noise gradient. Controls maximum height and steepness of terrain.
-local WATY = 4008 --  -- Water surface y.
+local YMIN = 4000 -- 4000 -- Approx realm bottom, will be rounded down to chunk edge.
+local YMAX = 4700 -- 4700 -- Approx realm top, will be rounded up to chunk edge.
+local OFFCEN = 4008 -- 4008 -- Offset centre. Average y of terrain.
+local GRAD = 340 -- 340 -- Noise gradient. Controls maximum height and steepness of terrain.
+local WATY = 4008 -- 4008 -- Water surface y.
 
 local CAVOFF = -0.01 -- -0.01 -- Cave offset. Controls cave size and size of cave entrances at the surface.
 local CAVEXP = 2 -- 2 -- Average cave expansion below surface, expansion is varied by perlin2 (noise10).
-local AIRTHR = 0.07 -- 0.07 -- Air noise threshold. Controls total depth of terrain and slith base.
-local SLITHR = 0.055 -- 0.055 -- Slith noise threshold. Controls terrain depth.
-local STOTHR = 0.015 -- 0.015 -- Stone noise threshold. Controls depth of dirt / sand below rockline.
+local AIRTHR = 0.06 -- 0.06 -- Air noise threshold. Controls total depth of terrain and slith base.
+local SLITHR = 0.045 -- 0.045 -- Slith noise threshold. Controls terrain depth.
+local STOTHR = 0.015 -- 0.015 -- Stone noise threshold. Controls depth of dirt / sand.
 
-local HITET = 0.35 --  -- Desert / rainforest temperature noise threshold.
-local LOTET = -0.45 --  -- Tundra / taiga temperature noise threshold.
-local HIWET = 0.25 --  -- Wet grassland / rainforest wetness noise threshold.
-local LOWET = -0.35 --  -- Tundra / dry grassland wetness noise threshold.
+local HITET = 0.15 -- 0.15 -- Desert / rainforest temperature noise threshold.
+local LOTET = -0.65 -- -0.65 -- Tundra / taiga temperature noise threshold.
+local TGRAD = 384 -- 384 -- Temperature noise gradient. Approx height above sea level for snow biome only.
+local HIWET = 0.25 -- 0.25 -- Wet grassland / rainforest wetness noise threshold.
+local LOWET = -0.35 -- -0.35 -- Tundra / dry grassland wetness noise threshold.
 
-local SAVY = 4520 --  -- Snowline average y.
-local SAMP = 64 --  -- Snowline amplitude.
-local SDIS = 64 --  -- Snowline transition distance.
+local SAVY = 4520 -- 4520 -- Snowline average y. Where snow thins out due to thin atmosphere.
+local SAMP = 64 -- 64 -- Snowline amplitude.
+local SDIS = 64 -- 64 -- Transition distance.
 
-local RAVY = 4200 --  -- Rockline average y.
-local RAMP = 64 --  -- Rockline amplitude.
-local RDIS = 64 --  -- Dirt/sand thinning distance.
+local RAVY = 4200 -- 4200 -- Rockline average y where dirt / sand starts to thin.
+local RAMP = 64 -- 64 -- Rockline amplitude.
+local RDIS = 64 -- 64 -- Transition distance.
 
-local SANY = 4012 --  -- Sandline average y.
-local SANA = 4 --  -- Sandline amplitude.
-local SAND = 2 --  -- Sandline transition distance.
+local SANY = 4012 -- 4012 -- Sandline average y where sand starts to thin.
+local SANA = 4 -- 4 -- Sandline amplitude.
+local SAND = 2 -- 2 -- Transition distance.
 
-local PAPCHA = 2 --  -- Papyrus 1/x chance per waterlevel node.
-local PAPTET = 0.35 --  -- Papyrus temperature noise threshold.
-local DESCACCHA = 421 --  -- Cactus 1/x chance per full node in desert.
-local DESGRACHA = 265 --  -- Dry shrub 1/x chance per full node in desert.
-local TUNGRACHA = 145 --  -- Dry shrub 1/x chance per full node in tundra.
-local TAIGRACHA = 60 --  -- Dry shrub 1/x chance per full node in taiga.
-local DRYGRACHA = 3 --  -- Dry shrub 1/x chance per full node in dry grasslands.
-local WETGRACHA = 2 --  -- Junglegrass 1/x chance per full node in wet grasslands.
-local DECAPPCHA = 85 --  -- Appletree sapling 1/x chance per full node in deciduous forest.
-local TAIPINCHA = 25 --  -- Pine 1/x chance per full node in taiga.
-local RAIJUNCHA = 13 --  -- Jungletree 1/x chance per full node in rainforest.
+local PAPCHA = 2 -- 2 -- Papyrus 1/x chance per waterlevel node.
+local PAPTET = 0.15 -- 0.15 -- Papyrus temperature noise threshold.
+local DESCACCHA = 421 -- 421 -- Cactus 1/x chance per full node in desert.
+local DESGRACHA = 265 -- 265 -- Dry shrub 1/x chance per full node in desert.
+local TUNGRACHA = 145 -- 145 -- Dry shrub 1/x chance per full node in tundra.
+local TAIGRACHA = 60 -- 60 -- Dry shrub 1/x chance per full node in taiga.
+local DRYGRACHA = 3 -- 3 -- Dry shrub 1/x chance per full node in dry grasslands.
+local WETGRACHA = 2 -- 2 -- Junglegrass 1/x chance per full node in wet grasslands.
+local DECAPPCHA = 85 -- 85 -- Appletree sapling 1/x chance per full node in deciduous forest.
+local TAIPINCHA = 25 -- 25 -- Pine 1/x chance per full node in taiga.
+local RAIJUNCHA = 13 -- 13 -- Jungletree 1/x chance per full node in rainforest.
 
-local CLOUDY = 4136 -- Cloud y.
+local CLOUDY = 4136 -- 4136 -- Cloud y.
 local CLOTHR = 0.6 -- 0.6 -- Cloud threshold (-2.0 to 2.0). Cloud cover, -2.0 = overcast, 0 = 1/2 cover, 0.4 = 1/3, 2.0 = none.
 local CLOINT = 59 -- 59 -- Cloud drift abm interval in seconds.
 local CLOCHA = 4096 -- 4096 = 64^2*4/4 -- Cloud drift abm 1/x chance per slith node.
@@ -65,6 +66,10 @@ local PINCHA = 11 -- 11 -- 1/x chance per node.
 
 local JUNINT = 71 -- 71 -- Jungletree from sapling abm interval in seconds.
 local JUNCHA = 11 -- 11 -- 1/x chance per node.
+
+local MECHA = 103823 -- 103823 = 47^3 -- Mese block 1/x chance per node.
+local IRCHA = 2197 -- 2197 = 13^3 -- Iron ore 1/x chance per node.
+local COCHA = 1331 -- 1331 = 11^3 -- Coal ore 1/x chance per node.
 
 local DEBUG = true
 
@@ -463,25 +468,6 @@ if SLABREALM then
 					local noise7 = perlin2:get2d({x=x*2,y=z*2})
 					local noise8 = perlin4:get2d({x=x+1024,y=z+1024})
 					local noise10 = perlin2:get2d({x=x*4,y=z*4})
-					if noise3 > HITET + math.random() / 10 then
-						if noise9 > HIWET + math.random() / 10 then
-							rai = true
-						else
-							des = true
-						end
-					elseif noise3 < LOTET + math.random() / 10 then
-						if noise9 < LOWET + math.random() / 10 then
-							tun = true
-						else
-							tai = true
-						end
-					elseif noise9 > HIWET + math.random() / 10 then
-						wet = true
-					elseif noise9 < LOWET + math.random() / 10 then
-						dry = true
-					else
-						dec = true
-					end
 					local sandy = SANY + noise6 * SANA + math.random(SAND)
 					local rocky = RAVY + noise7 * RAMP
 					local snowy = SAVY + noise8 * SAMP + math.random (SDIS)
@@ -497,16 +483,49 @@ if SLABREALM then
 						elseif noise1 + offset1 >= 0 and noise1 + offset1 < SLITHR then -- if terrain
 							local noise5 = perlin3:get3d({x=x,y=y-0.25,z=z})
 							if math.abs(noise5) - (noise1 + offset1) * (CAVEXP + noise10 / 2) + CAVOFF > 0 then -- if no cave
+								if not surf then -- when surface found decide biome
+									local temp = noise3 - (y - WATY) / TGRAD
+									if temp > HITET + math.random() / 10 then
+										if noise9 > HIWET + math.random() / 10 then
+											rai = true
+										else
+											des = true
+										end
+									elseif temp < LOTET + math.random() / 10 then
+										if noise9 < LOWET + math.random() / 10 then
+											tun = true
+										else
+											tai = true
+										end
+									elseif noise9 > HIWET + math.random() / 10 then
+										wet = true
+									elseif noise9 < LOWET + math.random() / 10 then
+										dry = true
+									else
+										dec = true
+									end
+								end
+								-- bring stone to surface above rocky
 								if y > rocky then
 									thrsto = STOTHR * (1 - (y - rocky) / RDIS)
 								else
 									thrsto = STOTHR
 								end
 								if noise1 + offset1 > thrsto then -- if stone layer
-									if des then
-										env:add_node({x=x,y=y,z=z},{name="slabrealm:redstone"})
+									if math.random(MECHA) == 2 and noise1 + offset1 >= STOTHR then
+										env:add_node({x=x,y=y,z=z},{name="default:mese"})
 									else
-										env:add_node({x=x,y=y,z=z},{name="slabrealm:stone"})
+										if des then
+											env:add_node({x=x,y=y,z=z},{name="slabrealm:redstone"})
+										else
+											if math.random(IRCHA) == 2 and noise1 + offset1 >= STOTHR then
+												env:add_node({x=x,y=y,z=z},{name="default:stone_with_iron"})
+											elseif math.random(COCHA) == 2 and noise1 + offset1 >= STOTHR then
+												env:add_node({x=x,y=y,z=z},{name="default:stone_with_coal"})
+											else
+												env:add_node({x=x,y=y,z=z},{name="slabrealm:stone"})
+											end
+										end
 									end
 									if (tun or tai) and not surf and y < snowy then
 										if tai then
@@ -515,11 +534,11 @@ if SLABREALM then
 											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
 										end
 									end
-								elseif not surf and y > WATY then -- if at surface and above water
+								elseif not surf and y > WATY then -- when surface found above water add slab or cube 
 									if y > sandy then uland = true end
 									local noise2 = perlin1:get3d({x=x,y=y+0.25,z=z})
 									local offset2 = (OFFCEN - (y+0.25)) / GRAD
-									if noise2 + offset2 > 0 then -- if centre of upper slab is solid
+									if noise2 + offset2 > 0 then -- if centre of upper slab is solid add cube
 										if tai then
 											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowblock"})
 										elseif tun then
@@ -572,20 +591,20 @@ if SLABREALM then
 										end
 									end
 								else
-									if y <= sandy and not uland then -- if below sandline and not underland
+									if y <= sandy and not uland then -- if below sandline and not under land
 										env:add_node({x=x,y=y,z=z},{name="default:sand"})
 									elseif des then
 										env:add_node({x=x,y=y,z=z},{name="default:desert_sand"})
 									else
 										env:add_node({x=x,y=y,z=z},{name="default:dirt"})
 									end
-									if not surf and y == WATY then -- if at surface, water level
+									if not surf and y == WATY then -- when surface found, water level
 										if tai then
 											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowblock"})
 										elseif tun then
 											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowslab"})
 										end
-										if noise3 > PAPTET + math.random() / 10 and math.random(PAPCHA) == 1 then
+										if temp > PAPTET + math.random() / 10 and math.random(PAPCHA) == 1 then
 											env:add_node({x=x,y=y,z=z},{name="default:dirt_with_grass"}) -- marshy ground
 											for p = 1, math.random(2,5) do
 												env:add_node({x=x,y=y+p,z=z},{name="default:papyrus"})
@@ -595,9 +614,9 @@ if SLABREALM then
 								end
 								surf = true
 							end
-						elseif y <= yminq + 28 then
+						elseif y <= yminq + 28 then -- realm boundary sand
 							env:add_node({x=x,y=y,z=z},{name="default:sand"})
-						elseif y <= WATY then
+						elseif y <= WATY then -- ice and water
 							if (tun or tai) and y == WATY then
 								env:add_node({x=x,y=y,z=z},{name="slabrealm:ice"})
 								if tai then
@@ -635,7 +654,9 @@ if SLABREALM then
 	end)
 end
 
--- ABM
+-- Abm.
+
+-- Dirtslab to grassslab abm.
 
 minetest.register_abm({
 	nodenames = {"slabrealm:dirtslab"},
@@ -645,6 +666,8 @@ minetest.register_abm({
 		minetest.env:add_node(pos,{name="slabrealm:grassslab"})
 	end,
 })
+
+-- Cloud drift abm.
 
 minetest.register_abm({
 	nodenames = {
@@ -713,6 +736,8 @@ minetest.register_abm({
 		end
 	end
 })
+
+-- Accumulating snow abm.
 
 if SNOABM then
 	minetest.register_abm({
@@ -785,6 +810,8 @@ minetest.register_abm({
 		end
     end,
 })
+
+-- Functions.
 
 -- Pine tree function
 

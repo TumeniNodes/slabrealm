@@ -1,39 +1,43 @@
--- slabrealm 0.4.0 by paramat.
--- License WTFPL, see license.txt.
--- Textures license CC BY-SA.
--- The snow, ice, needles and psapling textures are from the snow biomes mod by Splizard, bob and cornernote, license CC BY-SA.
--- The jleaf and jsapling sapling textures are from the jungletree mod by Bas080, license WTFPL.
+-- http://forum.minetest.net/viewtopic.php?id=5686
+-- Slabrealm 0.5.0 by paramat
+-- For latest stable Minetest and back to 0.4.3
+-- Depends default
+-- Licenses: code WTFPL, original textures CC BY_SA
+-- The snow, ice, needles and psapling textures are from the snow biomes mod by Splizard, license CC BY-SA
+-- The jleaf and jsapling sapling textures are from the jungletree mod by Bas080, license WTFPL
 
 -- Parameters.
 
-local SLABREALM = true -- Enable generation (true / false).
-local YMIN = 4000 -- 4000 -- Approx realm bottom, will be rounded down to chunk edge.
-local YMAX = 4700 -- 4700 -- Approx realm top, will be rounded up to chunk edge.
-local OFFCEN = 4008 -- 4008 -- Offset centre. Average y of terrain.
-local GRAD = 340 -- 340 -- Noise gradient. Controls maximum height and steepness of terrain.
-local WATY = 4008 -- 4008 -- Water surface y.
+local ONGEN = true -- Enable generation (true / false).
+local YMIN = 4000 -- Approx realm bottom, will be rounded down to chunk edge.
+local YMAX = 5000 -- Approx realm top, will be rounded up to chunk edge.
+local ZMIN = -2000 -- Approx south wall, will be rounded down to chunk edge.
+local ZMAX = 2000 -- Approx north wall, will be rounded up to chunk edge.
+local OFFCEN = 4008 -- Offset centre. Average y of terrain.
+local GRAD = 320 -- Noise gradient. Controls maximum height and steepness of terrain.
+local WATY = 4008 -- Water surface y.
 
 local CAVOFF = -0.01 -- -0.01 -- Cave offset. Controls cave size and size of cave entrances at the surface.
-local CAVEXP = 2 -- 2 -- Average cave expansion below surface, expansion is varied by perlin2 (noise10).
-local AIRTHR = 0.06 -- 0.06 -- Air noise threshold. Controls total depth of terrain and slith base.
-local SLITHR = 0.045 -- 0.045 -- Slith noise threshold. Controls terrain depth.
-local STOTHR = 0.015 -- 0.015 -- Stone noise threshold. Controls depth of dirt / sand.
+local CAVEXP = 1 -- 1 -- Cave expansion rate below surface.
+local AIRTHR = 0.13 -- 0.13 -- Air noise threshold. Controls total depth of terrain and slith base.
+local SLITHR = 0.10 -- 0.10 -- Slith noise threshold. Controls terrain depth.
+local STOTHR = 0.03 -- 0.03 -- Stone noise threshold. Controls depth of dirt / sand.
 
 local HITET = 0.15 -- 0.15 -- Desert / rainforest temperature noise threshold.
 local LOTET = -0.65 -- -0.65 -- Tundra / taiga temperature noise threshold.
-local TGRAD = 384 -- 384 -- Temperature noise gradient. Approx height above sea level for snow biome only.
+local TGRAD = 240 -- 240 -- Temperature noise gradient. Approx height above sea level for snow biome only.
 local HIWET = 0.25 -- 0.25 -- Wet grassland / rainforest wetness noise threshold.
 local LOWET = -0.35 -- -0.35 -- Tundra / dry grassland wetness noise threshold.
 
-local SAVY = 4520 -- 4520 -- Snowline average y. Where snow thins out due to thin atmosphere.
-local SAMP = 64 -- 64 -- Snowline amplitude.
-local SDIS = 64 -- 64 -- Transition distance.
+local SAVY = 4320 -- 4320 -- Snowline average y. Where snow starts to thin due to thin atmosphere.
+local SAMP = 40 -- 40 -- Snowline amplitude.
+local SDIS = 320 -- 320 -- Transition distance.
 
-local RAVY = 4200 -- 4200 -- Rockline average y where dirt / sand starts to thin.
-local RAMP = 64 -- 64 -- Rockline amplitude.
-local RDIS = 64 -- 64 -- Transition distance.
+local RAVY = 4240 -- 4240 -- Rockline average y where dirt / desert sand starts to thin.
+local RAMP = 80 -- 80 -- Rockline amplitude.
+local RDIS = 120 -- 120 -- Transition distance.
 
-local SANY = 4012 -- 4012 -- Sandline average y where sand starts to thin.
+local SANY = 4012 -- 4012 -- Sandline average y where beach sand starts to thin.
 local SANA = 4 -- 4 -- Sandline amplitude.
 local SAND = 2 -- 2 -- Transition distance.
 
@@ -54,7 +58,7 @@ local CLOTHR = 0.6 -- 0.6 -- Cloud threshold (-2.0 to 2.0). Cloud cover, -2.0 = 
 local CLOINT = 59 -- 59 -- Cloud drift abm interval in seconds.
 local CLOCHA = 4096 -- 4096 = 64^2*4/4 -- Cloud drift abm 1/x chance per slith node.
 
-local SNOABM = true -- Enable snowing abm.
+local SNOABM = false -- Enable snowing abm.
 local SNOINT = 57 -- 57 -- Snowing abm interval in seconds.
 local SNOCHA = 4096 -- 4096 = 64^2*4/4 -- 1/x chance per slith node.
 
@@ -74,28 +78,36 @@ local COCHA = 1331 -- 1331 = 11^3 -- Coal ore 1/x chance per node.
 local DEBUG = true
 
 -- 3D Perlin1 for terrain (noise1 and noise2).
-local SEEDDIFF1 = 5829058
-local OCTAVES1 = 8 -- 8
-local PERSISTENCE1 = 0.53 -- 0.53 -- Roughness of terrain.
-local SCALE1 = 1024 -- 1024 -- Largest scale of terrain.
+local perl1 = {
+	SEED1 = 5829058,
+	OCTA1 = 8, -- 8
+	PERS1 = 0.53, -- 0.53
+	SCAL1 = 1024, -- 1024
+}
 
--- 2D Perlin2 for temperature (noise3), clouds (noise4), rockline (noise7), cave size (noise10).
-local SEEDDIFF2 = 7690676
-local OCTAVES2 = 5 -- 5
-local PERSISTENCE2 = 0.5 -- 0.5
-local SCALE2 = 512 -- 512
+-- 2D Perlin2 for temperature (noise3), clouds (noise4), rockline (noise7).
+local perl2 = {
+	SEED2 = 7690676,
+	OCTA2 = 5, -- 5
+	PERS2 = 0.5, -- 0.5
+	SCAL2 = 512, -- 512
+}
 
 -- 3D Perlin3 for caves (noise5).
-local SEEDDIFF3 = 8486984
-local OCTAVES3 = 2 -- 2
-local PERSISTENCE3 = 0.53 -- 0.53
-local SCALE3 = 16 -- 16
+local perl3 = {
+	SEED3 = 8486984,
+	OCTA3 = 3, -- 3
+	PERS3 = 0.5, -- 0.5
+	SCAL3 = 32, -- 32
+}
 
 -- 2D Perlin4 for wetness (noise9), sandline (noise6), snowline (noise8).
-local SEEDDIFF4 = 1035756
-local OCTAVES4 = 5 -- 5
-local PERSISTENCE4 = 0.5 -- 0.5
-local SCALE4 = 512 -- 512
+local perl4 = {
+	SEED4 = 1035756,
+	OCTA4 = 5, -- 5
+	PERS4 = 0.5, -- 0.5
+	SCAL4 = 512, -- 512
+}
 
 -- Stuff.
 
@@ -104,6 +116,9 @@ slabrealm = {}
 local yminq = (80 * math.floor((YMIN + 32) / 80)) - 32
 local ymaxq = (80 * math.floor((YMAX + 32) / 80)) + 47
 local cloudyq = (80 * math.floor((CLOUDY + 32) / 80)) - 32
+local zminq = (80 * math.floor((ZMIN + 32) / 80)) - 32
+local zmaxq = (80 * math.floor((ZMAX + 32) / 80)) + 47
+local depth = ymaxq - yminq
 
 -- Nodes.
 
@@ -280,7 +295,6 @@ minetest.register_node("slabrealm:stone", {
 	description = "SR Stone",
 	tiles = {"slabrealm_stone.png"},
 	groups = {cracky=3},
-	drop = "default:cobble",
 	sounds = default.node_sound_stone_defaults(),
 })
 
@@ -368,6 +382,14 @@ minetest.register_node("slabrealm:jsapling", {
 	sounds = default.node_sound_defaults(),
 })
 
+minetest.register_node("slabrealm:light", {
+	description = "Light",
+	tiles = {"slabrealm_light.png"},
+	light_source = 14,
+	groups = {cracky=3,choppy=3,oddly_breakable_by_hand=3},
+	sounds = default.node_sound_glass_defaults(),
+})
+
 -- Crafting
 
 minetest.register_craft({
@@ -430,29 +452,57 @@ minetest.register_craft({
     },
 })
 
+minetest.register_craft({
+	output = "slabworld:light 2",
+	recipe = {
+		{"", "", "default:glass"},
+		{"", "default:coal_lump", ""},
+		{"default:glass", "", ""},
+	}
+})
+
+minetest.register_craft({
+    output = "default:water_source",
+    recipe = {
+        {"slabrealm:snowblock"},
+    },
+})
+
+minetest.register_craft({
+    output = "default:cobble",
+    recipe = {
+        {"slabrealm:stone"},
+    },
+})
+
 -- On generated function.
 
-if SLABREALM then
+if ONGEN then
 	minetest.register_on_generated(function(minp, maxp, seed)
 		if minp.y >= yminq and maxp.y <= ymaxq then
 			local env = minetest.env
-			local xl = maxp.x - minp.x
-			local yl = maxp.y - minp.y
-			local zl = maxp.z - minp.z
+			local x1 = maxp.x
+			local y1 = maxp.y
+			local z1 = maxp.z
 			local x0 = minp.x
 			local y0 = minp.y
 			local z0 = minp.z
-			local perlin1 = env:get_perlin(SEEDDIFF1, OCTAVES1, PERSISTENCE1, SCALE1)
-			local perlin2 = env:get_perlin(SEEDDIFF2, OCTAVES2, PERSISTENCE2, SCALE2)
-			local perlin3 = env:get_perlin(SEEDDIFF3, OCTAVES3, PERSISTENCE3, SCALE3)
-			local perlin4 = env:get_perlin(SEEDDIFF4, OCTAVES4, PERSISTENCE4, SCALE4)
-			for k = 0, zl do -- for each plane do
-				local z = z0 + k
+			local perlin1 = env:get_perlin(perl1.SEED1, perl1.OCTA1, perl1.PERS1, perl1.SCAL1)
+			local perlin2 = env:get_perlin(perl2.SEED2, perl2.OCTA2, perl2.PERS2, perl2.SCAL2)
+			local perlin3 = env:get_perlin(perl3.SEED3, perl3.OCTA3, perl3.PERS3, perl3.SCAL3)
+			local perlin4 = env:get_perlin(perl4.SEED4, perl4.OCTA4, perl4.PERS4, perl4.SCAL4)
+			for z = z0, z1 do -- for each plane do
 				if DEBUG then
-					print ("[slabrealm] Processing "..k.." ("..minp.x.." "..minp.y.." "..minp.z..")")
+					print ("[slabrealm] Processing "..(z - z0).." ("..minp.x.." "..minp.y.." "..minp.z..")")
 				end
-				for i = 0, xl do -- for each column do
-					local x = x0 + i
+				if z >= zminq and z <= zminq + depth then
+					cenoff = OFFCEN + ((zminq + depth - z) / depth) ^ 3 * (depth + GRAD)
+				elseif z <= zmaxq and z >= zmaxq - depth then
+					cenoff = OFFCEN + ((z - zmaxq + depth) / depth) ^ 3 * (depth + GRAD)
+				else
+					cenoff = OFFCEN
+				end
+				for x = x0, x1 do -- for each column do
 					local surf = false -- has surface been found?
 					local uland = false -- is column inland not under sand?
 					local des = false -- desert biome
@@ -467,24 +517,23 @@ if SLABREALM then
 					local noise6 = perlin4:get2d({x=x*4,y=z*4})
 					local noise7 = perlin2:get2d({x=x*2,y=z*2})
 					local noise8 = perlin4:get2d({x=x+1024,y=z+1024})
-					local noise10 = perlin2:get2d({x=x*4,y=z*4})
 					local sandy = SANY + noise6 * SANA + math.random(SAND)
 					local rocky = RAVY + noise7 * RAMP
 					local snowy = SAVY + noise8 * SAMP + math.random (SDIS)
-					for j = yl, 0, -1 do -- working downwards in a column, for each node do
-						local y = y0 + j
+					for y = y1, y0, -1 do -- working downwards in a column, for each node do
 						local noise1 = perlin1:get3d({x=x,y=y-0.25,z=z}) -- noise at centre of lower slab
-						local offset1 = (OFFCEN - (y - 0.25)) / GRAD
-						if noise1 + offset1 >= AIRTHR or y <= yminq + 18 then
+						local offset1 = (cenoff - (y - 0.25)) / GRAD
+						local noise1off = noise1 + offset1
+						if noise1off >= AIRTHR or y <= yminq + 18 then
 							break -- if below slith base break y loop new column
-						elseif (noise1 + offset1 >= SLITHR and noise1 + offset1 < AIRTHR) -- if slith base
+						elseif (noise1off >= SLITHR and noise1off < AIRTHR) -- if slith base
 						or y <= yminq + 23 then
 							env:add_node({x=x,y=y,z=z},{name="slabrealm:slith"})
-						elseif noise1 + offset1 >= 0 and noise1 + offset1 < SLITHR then -- if terrain
+						elseif noise1off >= 0 and noise1off < SLITHR then -- if terrain
 							local noise5 = perlin3:get3d({x=x,y=y-0.25,z=z})
-							if math.abs(noise5) - (noise1 + offset1) * (CAVEXP + noise10 / 2) + CAVOFF > 0 then -- if no cave
+							if math.abs(noise5) - noise1off * CAVEXP + CAVOFF > 0 then -- if no cave
 								if not surf then -- when surface found decide biome
-									local temp = noise3 - (y - WATY) / TGRAD
+									temp = noise3 - (y - WATY) / TGRAD
 									if temp > HITET + math.random() / 10 then
 										if noise9 > HIWET + math.random() / 10 then
 											rai = true
@@ -511,16 +560,16 @@ if SLABREALM then
 								else
 									thrsto = STOTHR
 								end
-								if noise1 + offset1 > thrsto then -- if stone layer
-									if math.random(MECHA) == 2 and noise1 + offset1 >= STOTHR then
+								if noise1off > thrsto then -- if stone layer
+									if math.random(MECHA) == 2 and noise1off >= STOTHR then
 										env:add_node({x=x,y=y,z=z},{name="default:mese"})
 									else
 										if des then
 											env:add_node({x=x,y=y,z=z},{name="slabrealm:redstone"})
 										else
-											if math.random(IRCHA) == 2 and noise1 + offset1 >= STOTHR then
+											if math.random(IRCHA) == 2 and noise1off >= STOTHR then
 												env:add_node({x=x,y=y,z=z},{name="default:stone_with_iron"})
-											elseif math.random(COCHA) == 2 and noise1 + offset1 >= STOTHR then
+											elseif math.random(COCHA) == 2 and noise1off >= STOTHR then
 												env:add_node({x=x,y=y,z=z},{name="default:stone_with_coal"})
 											else
 												env:add_node({x=x,y=y,z=z},{name="slabrealm:stone"})
@@ -537,7 +586,7 @@ if SLABREALM then
 								elseif not surf and y > WATY then -- when surface found above water add slab or cube 
 									if y > sandy then uland = true end
 									local noise2 = perlin1:get3d({x=x,y=y+0.25,z=z})
-									local offset2 = (OFFCEN - (y+0.25)) / GRAD
+									local offset2 = (cenoff - (y+0.25)) / GRAD
 									if noise2 + offset2 > 0 then -- if centre of upper slab is solid add cube
 										if tai then
 											env:add_node({x=x,y=y+1,z=z},{name="slabrealm:snowblock"})
@@ -633,8 +682,8 @@ if SLABREALM then
 				if DEBUG then
 					print ("[slabrealm] Clouds ("..minp.x.." "..minp.y.." "..minp.z..")")
 				end
-				for i = 0, xl, 16 do
-				for k = 0, zl, 16 do
+				for i = 0, (x1 - x0), 16 do
+				for k = 0, (z1 - z0), 16 do
 					local noise4 = perlin2:get2d({x=(x0+i)*4,y=(z0+k)*16})
 					if noise4 > CLOTHR then
 						for a = 0, 15 do

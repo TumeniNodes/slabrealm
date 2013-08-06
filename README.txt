@@ -1,5 +1,5 @@
 http://forum.minetest.net/viewtopic.php?id=5686
-Slabrealm 0.5.0 by paramat
+Slabrealm 0.5.1 by paramat
 For latest stable Minetest and back to 0.4.3
 Depends default
 Licenses: code WTFPL, original textures CC BY_SA
@@ -55,9 +55,13 @@ Ore generation in stone: mese block, iron ore and coal.
 
 Version 0.5.0
 -------------
-1 km walls to create bishop ring space habitat.
+1 km walls 4km apart to create bishop ring space habitat.
 'Function at line *** has more than 60 upvalues', starting to pack paramters into tables.
 Snowblock crafts to default:water_source.
-Added lights.
+Added lights but not yet added to wall.
 Slabrealm:stone crafts to cobble.
 Terrain is thicker, average 30 nodes.
+
+Version 0.5.0
+-------------
+2 colour walls grey / red defined by temperature perlin.

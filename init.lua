@@ -1,5 +1,5 @@
 -- http://forum.minetest.net/viewtopic.php?id=5686
--- Slabrealm 0.5.0 by paramat
+-- Slabrealm 0.5.1 by paramat
 -- For latest stable Minetest and back to 0.4.3
 -- Depends default
 -- Licenses: code WTFPL, original textures CC BY_SA
@@ -503,8 +503,8 @@ if ONGEN then
 					cenoff = OFFCEN
 				end
 				for x = x0, x1 do -- for each column do
-					local surf = false -- has surface been found?
-					local uland = false -- is column inland not under sand?
+					local surf = false -- has surface been found
+					local uland = false -- is column inland not under sand
 					local des = false -- desert biome
 					local rai = false -- rainforest biome
 					local wet = false -- wet grassland biome
@@ -512,6 +512,7 @@ if ONGEN then
 					local dec = false -- deciduous forest biome
 					local tun = false -- tundra biome
 					local tai = false -- taiga forest biome
+					local red = false -- redstone under biome
 					local noise3 = perlin2:get2d({x=x,y=z})
 					local noise9 = perlin4:get2d({x=x,y=z})
 					local noise6 = perlin4:get2d({x=x*4,y=z*4})
@@ -532,7 +533,7 @@ if ONGEN then
 						elseif noise1off >= 0 and noise1off < SLITHR then -- if terrain
 							local noise5 = perlin3:get3d({x=x,y=y-0.25,z=z})
 							if math.abs(noise5) - noise1off * CAVEXP + CAVOFF > 0 then -- if no cave
-								if not surf then -- when surface found decide biome
+								if not surf then -- when surface first found decide biome
 									temp = noise3 - (y - WATY) / TGRAD
 									if temp > HITET + math.random() / 10 then
 										if noise9 > HIWET + math.random() / 10 then
@@ -553,6 +554,9 @@ if ONGEN then
 									else
 										dec = true
 									end
+									if noise3 > HITET + math.random() / 10 then -- redstone under hot biomes and in walls
+										red = true
+									end
 								end
 								-- bring stone to surface above rocky
 								if y > rocky then
@@ -564,7 +568,7 @@ if ONGEN then
 									if math.random(MECHA) == 2 and noise1off >= STOTHR then
 										env:add_node({x=x,y=y,z=z},{name="default:mese"})
 									else
-										if des then
+										if red then
 											env:add_node({x=x,y=y,z=z},{name="slabrealm:redstone"})
 										else
 											if math.random(IRCHA) == 2 and noise1off >= STOTHR then

@@ -62,6 +62,6 @@ Added lights but not yet added to wall.
 Slabrealm:stone crafts to cobble.
 Terrain is thicker, average 30 nodes.
 
-Version 0.5.0
+Version 0.5.1
 -------------
 2 colour walls grey / red defined by temperature perlin.

@@ -124,7 +124,7 @@ local depth = ymaxq - yminq
 
 minetest.register_node("slabrealm:grassslab", {
 	description = "SR Grass Slab",
-	tiles = {"default_grass.png", "default_dirt.png", "default_grass_side.png"},
+	tiles = {"default_grass.png", "default_dirt.png", "default_grass.png"},
 	drawtype = "nodebox",
 	paramtype = "light",
 	sunlight_propagates = true,
